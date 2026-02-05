@@ -1,0 +1,4 @@
+export const CONTRACTS = {
+  arcToken: '0xA40E4b613323eC8D93a6C53907EB607718587dfc',
+  billSplit: '0x4aDB4227D0bc9e6A0635E990B17df8e85187e326',
+};
