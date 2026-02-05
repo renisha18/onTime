@@ -1,12 +1,16 @@
 import { useAccount } from 'wagmi';
 import ConnectButton from './components/Connect';
 import Profile from './components/profile';
+import Home from './pages/Home';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import CreateExpensePage from './pages/CreateExpense';
+
 
 function App() {
   const { isConnected } = useAccount();
-
   return (
     <div style={styles.app}>
+      <BrowserRouter>
       {!isConnected ? (
         // LANDING SCREEN
         <div style={styles.landing}>
@@ -16,8 +20,16 @@ function App() {
         </div>
       ) : (
         // AFTER CONNECT
-        <Profile />
+       <>
+       <Profile/>
+       <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/createexpense" element={<CreateExpensePage />} />
+       </Routes>
+       </>
       )}
+
+</BrowserRouter>
     </div>
   );
 }
