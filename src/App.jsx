@@ -4,6 +4,7 @@ import Profile from './components/profile';
 import Home from './pages/Home';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CreateExpensePage from './pages/CreateExpense';
+import ExpenseList from './pages/ExpenseList';
 
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
        <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/createexpense" element={<CreateExpensePage />} />
+              <Route path="/expenses" element={<ExpenseList />} />
        </Routes>
        </>
       )}
