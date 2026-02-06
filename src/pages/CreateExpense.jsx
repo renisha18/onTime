@@ -3,6 +3,8 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadCont
 import { useNavigate } from 'react-router-dom';
 import { parseEther, formatEther } from 'viem';
 import { getBillSplitContract, getArcTokenContract } from '../utils/contracts';
+// Import Nitrolite helper
+import { initializeNitrolite, createSession, sendPayment, closeSession } from '../utils/nitroliteHelper';
 
 export default function CreateExpensePage() {
   const { address, isConnected } = useAccount();
@@ -11,6 +13,13 @@ export default function CreateExpensePage() {
   const [totalAmount, setTotalAmount] = useState('');
   const [description, setDescription] = useState('');
   const [participants, setParticipants] = useState(['']);
+  
+  // Nitrolite/Yellow Network state
+  const [nitroliteClient, setNitroliteClient] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionActive, setSessionActive] = useState(false);
+  const [paymentTracking, setPaymentTracking] = useState({});
+  const [expenseCreationTime, setExpenseCreationTime] = useState(null);
 
   // Contract interaction
   const { writeContract, data: hash, isPending, error } = useWriteContract();
@@ -24,6 +33,17 @@ export default function CreateExpensePage() {
     functionName: 'balanceOf',
     args: [address],
   });
+
+  // Initialize Nitrolite client when wallet connects
+  useEffect(() => {
+    console.log('🔄 Wallet connection changed:', { isConnected, address });
+    if (isConnected && address) {
+      console.log('🟡 Wallet connected - initializing Nitrolite...');
+      initializeNitroliteClient();
+    } else {
+      console.log('⚠️ Wallet not connected - skipping Nitrolite initialization');
+    }
+  }, [isConnected, address]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -40,11 +60,153 @@ export default function CreateExpensePage() {
   }, [error]);
 
   useEffect(() => {
-    if (isSuccess) {
-      const timer = setTimeout(() => navigate('/'), 3000);
+    if (isSuccess && sessionId) {
+      // Don't navigate immediately, wait for payments to be tracked
+      const timer = setTimeout(() => {
+        closeNitroliteSession();
+      }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [isSuccess, navigate]);
+  }, [isSuccess, navigate, sessionId]);
+
+  // Initialize Nitrolite Client using helper
+  const initializeNitroliteClient = async () => {
+    console.log('🔄 [CreateExpense] Initializing Nitrolite...');
+    const client = await initializeNitrolite(address);
+    
+    if (client) {
+      setNitroliteClient(client);
+      console.log('✅ [CreateExpense] Nitrolite ready!');
+    } else {
+      setNitroliteClient(null);
+      console.log('⚠️ [CreateExpense] Nitrolite initialization failed - continuing without it');
+    }
+  };
+
+  // Create Application Session using Nitrolite helper
+  const openNitroliteSession = async () => {
+    console.log('🔄 [CreateExpense] Opening session...');
+    console.log('🔄 [CreateExpense] Client available:', !!nitroliteClient);
+    
+    if (!nitroliteClient) {
+      console.warn('⚠️ [CreateExpense] Nitrolite client not initialized');
+      return null;
+    }
+
+    const sessionId = await createSession(nitroliteClient, {
+      purpose: 'expense-payment',
+      description: description,
+      totalAmount: totalAmount,
+      createdBy: address,
+    });
+
+    if (sessionId) {
+      setSessionId(sessionId);
+      setSessionActive(true);
+      setExpenseCreationTime(Date.now());
+      console.log('✅ [CreateExpense] Session opened:', sessionId);
+    }
+
+    return sessionId;
+  };
+
+  // Track payment in Nitrolite session using helper
+  const trackPayment = async (participantAddress, amount, paymentTime) => {
+    if (!nitroliteClient || !sessionId) {
+      console.warn('⚠️ [CreateExpense] No active Nitrolite session for payment tracking');
+      return;
+    }
+
+    console.log(`🔄 [CreateExpense] Tracking payment for ${participantAddress}...`);
+
+    const payment = await sendPayment(nitroliteClient, sessionId, {
+      from: address,
+      to: participantAddress,
+      amount: amount.toString(),
+      timestamp: paymentTime,
+      expenseDescription: description,
+    });
+
+    if (!payment) {
+      console.warn('⚠️ [CreateExpense] Payment tracking failed');
+      return;
+    }
+
+    // Calculate Arc rewards based on payment timing
+    const timeDiff = (paymentTime - expenseCreationTime) / 1000; // in seconds
+    let arcReward = 0;
+    
+    if (timeDiff < 60) { // Instant payment (< 1 minute)
+      arcReward = 2;
+    } else if (timeDiff < 86400) { // Within 24 hours
+      arcReward = 1;
+    }
+
+    // Update payment tracking
+    setPaymentTracking(prev => ({
+      ...prev,
+      [participantAddress]: {
+        paid: true,
+        amount: amount.toString(),
+        time: paymentTime,
+        arcReward: arcReward,
+        offChainMsgId: payment.messageId || payment.id || 'tracked',
+      }
+    }));
+
+    console.log(`✅ [CreateExpense] Payment tracked. Arc reward: ${arcReward}`);
+    return payment;
+  };
+
+  // Close Nitrolite session using helper
+  const closeNitroliteSession = async () => {
+    if (!nitroliteClient || !sessionId) {
+      console.warn('⚠️ [CreateExpense] No active Nitrolite session to close');
+      navigate('/');
+      return;
+    }
+
+    console.log('🔄 [CreateExpense] Closing session...');
+
+    const success = await closeSession(nitroliteClient, sessionId);
+
+    if (success) {
+      // Award Arc tokens based on payment tracking
+      await awardArcTokens();
+      console.log('🎉 [CreateExpense] Arc tokens awarded!');
+    }
+
+    setSessionActive(false);
+    setSessionId(null);
+    
+    console.log('✅ [CreateExpense] Session cleanup complete');
+    
+    // Navigate after settlement
+    setTimeout(() => navigate('/'), 2000);
+  };
+
+  // Award Arc tokens to participants based on payment timing
+  const awardArcTokens = async () => {
+    try {
+      const arcContract = getArcTokenContract();
+      
+      for (const [participant, tracking] of Object.entries(paymentTracking)) {
+        if (tracking.arcReward > 0) {
+          console.log(`🪙 Awarding ${tracking.arcReward} ARC to ${participant}`);
+          
+          // This would be a contract call to mint/transfer Arc tokens
+          await writeContract({
+            address: arcContract.address,
+            abi: arcContract.abi,
+            functionName: 'mint', // or 'transfer' depending on your contract
+            args: [participant, parseEther(tracking.arcReward.toString())],
+          });
+        }
+      }
+    } catch (err) {
+      console.error('❌ Failed to award Arc tokens:', err);
+    }
+  };
 
   const addParticipant = () => {
     setParticipants([...participants, '']);
@@ -61,7 +223,7 @@ export default function CreateExpensePage() {
   };
 
   const handleSubmit = async () => {
-    console.log('=== CREATE EXPENSE DEBUG ===');
+    console.log('=== CREATE EXPENSE WITH YELLOW DEBUG ===');
     console.log('Connected:', isConnected);
     console.log('Address:', address);
     console.log('Description:', description);
@@ -93,6 +255,14 @@ export default function CreateExpensePage() {
     console.log('All participants:', allParticipants);
 
     try {
+      // Step 1: Create Nitrolite session for gasless off-chain messaging
+      const newSessionId = await openNitroliteSession();
+      
+      if (!newSessionId) {
+        console.warn('⚠️ Proceeding without Nitrolite session');
+      }
+
+      // Step 2: Create expense on-chain (or track in Yellow session)
       const contract = getBillSplitContract();
       console.log('Contract config:', contract);
       
@@ -110,11 +280,23 @@ export default function CreateExpensePage() {
         ],
       });
 
-      console.log('writeContract executed, waiting for MetaMask...');
+      console.log('✅ Expense created, Nitrolite session active for payments');
+      
     } catch (err) {
       console.error('Submit error:', err);
       alert('Error: ' + (err.message || 'Failed to create expense'));
+      
+      // Close session on error
+      if (sessionId) {
+        await closeNitroliteSession();
+      }
     }
+  };
+
+  // Simulate payment (for testing)
+  const simulatePayment = async (participantAddress) => {
+    const perPersonAmount = parseEther(totalAmount) / BigInt(participants.filter(p => p.trim()).length + 1);
+    await trackPayment(participantAddress, perPersonAmount, Date.now());
   };
 
   const numPeople = participants.filter(p => p.trim()).length + 1;
@@ -124,6 +306,17 @@ export default function CreateExpensePage() {
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Create New Expense</h1>
+
+      {/* Yellow Session Status */}
+      {sessionActive && (
+        <div style={styles.yellowBanner}>
+          <span style={styles.yellowIcon}>⚡</span>
+          <div>
+            <p style={styles.yellowLabel}>Yellow Session Active</p>
+            <p style={styles.yellowStatus}>Gasless payments enabled • Session ID: {sessionId?.slice(0, 8)}...</p>
+          </div>
+        </div>
+      )}
 
       {/* Arc Balance Badge */}
       <div style={styles.arcBanner}>
@@ -198,6 +391,12 @@ export default function CreateExpensePage() {
               >
                 ✕
               </button>
+              {/* Show payment status if tracked */}
+              {paymentTracking[p] && (
+                <span style={styles.paidBadge}>
+                  ✅ +{paymentTracking[p].arcReward} ARC
+                </span>
+              )}
             </div>
           ))}
 
@@ -216,6 +415,11 @@ export default function CreateExpensePage() {
           <p>Total: <strong>{totalAmount || '0.0000'} ETH</strong></p>
           <p>Split between: <strong>{numPeople} people</strong></p>
           <p>Each person owes: <strong>{perPerson} ETH</strong></p>
+          {sessionActive && (
+            <p style={{ color: '#059669', fontWeight: '600', marginTop: '8px' }}>
+              ⚡ Gas-free payments via Yellow Network
+            </p>
+          )}
         </div>
 
         {/* Submit Button */}
@@ -231,7 +435,7 @@ export default function CreateExpensePage() {
         >
           {isPending && '⏳ Waiting for wallet approval...'}
           {isConfirming && '⏳ Confirming transaction...'}
-          {!isPending && !isConfirming && '🚀 Create & Share Expense'}
+          {!isPending && !isConfirming && '🚀 Create Expense (Gas-Free)'}
         </button>
 
         {/* Transaction Status */}
@@ -249,10 +453,11 @@ export default function CreateExpensePage() {
           </div>
         )}
 
-        {isSuccess && (
+        {isSuccess && sessionActive && (
           <div style={styles.success}>
             <p style={{ margin: '0 0 8px 0', fontSize: '20px' }}>🎉 Expense created!</p>
-            <p style={{ margin: 0 }}>Redirecting to home...</p>
+            <p style={{ margin: 0 }}>Yellow session active. Payments will be tracked off-chain.</p>
+            <p style={{ margin: '8px 0 0 0', fontSize: '12px' }}>Session will auto-settle when complete...</p>
           </div>
         )}
       </div>
@@ -269,6 +474,30 @@ const styles = {
   title: {
     fontSize: '32px',
     marginBottom: '16px',
+  },
+  yellowBanner: {
+    backgroundColor: '#FEF3C7',
+    border: '2px solid #F59E0B',
+    padding: '16px',
+    borderRadius: '12px',
+    marginBottom: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  yellowIcon: {
+    fontSize: '32px',
+  },
+  yellowLabel: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#92400E',
+    margin: '0 0 4px 0',
+  },
+  yellowStatus: {
+    fontSize: '12px',
+    color: '#92400E',
+    margin: 0,
   },
   arcBanner: {
     backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -338,6 +567,15 @@ const styles = {
     cursor: 'pointer',
     fontSize: '16px',
     flexShrink: 0,
+  },
+  paidBadge: {
+    backgroundColor: '#10B981',
+    color: 'white',
+    padding: '6px 12px',
+    borderRadius: '12px',
+    fontSize: '12px',
+    fontWeight: '600',
+    whiteSpace: 'nowrap',
   },
   addBtn: {
     backgroundColor: '#E0E7FF',

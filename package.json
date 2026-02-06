@@ -10,12 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@erc7824/nitrolite": "^0.5.3",
     "@tanstack/react-query": "^5.59.16",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",
-    "viem": "^2.21.19",
-    "wagmi": "^2.12.28"
+    "viem": "^2.45.1",
+    "wagmi": "^2.12.28",
+    "yellow-ts": "^0.0.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
