@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
-import { getBillSplitContract } from '../utils/contracts';
+import { getBillSplitContract, getArcTokenContract } from '../utils/contracts';
 import { initializeNitrolite, sendPayment } from '../utils/Nitrolitehelper';
 
 export default function ExpenseList() {
@@ -28,6 +28,15 @@ export default function ExpenseList() {
     args: [address],
   });
 
+  // Read user's Arc rewards
+  const { data: totalRewards } = useReadContract({
+    ...getBillSplitContract(),
+    functionName: 'getUserRewards',
+    args: [address],
+  });
+
+  const arcRewards = totalRewards ? (Number(totalRewards) / 1e18).toFixed(2) : '0.00';
+
   if (!expenseIds || expenseIds.length === 0) {
     return (
       <div style={styles.emptyState}>
@@ -39,7 +48,14 @@ export default function ExpenseList() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Your Expenses</h1>
+      <div style={styles.header}>
+        <h1 style={styles.title}>Your Expenses</h1>
+        
+        {/* Arc Balance Display */}
+        <div style={styles.arcBadge}>
+          🪙 Total Arc Rewards: <strong>{arcRewards} ARC</strong>
+        </div>
+      </div>
       
       {/* Nitrolite Status Banner */}
       {nitroliteClient && (
@@ -82,18 +98,30 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
   });
 
   // Write contract for payment
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ 
     hash 
   });
 
+  // Log any write errors
+  useEffect(() => {
+    if (writeError) {
+      console.error('❌ [ExpenseCard] Write contract error:', writeError);
+      alert('Transaction error: ' + (writeError.shortMessage || writeError.message));
+      setIsPaying(false);
+    }
+  }, [writeError]);
+
   // Handle successful payment
-  if (isSuccess && isPaying) {
-    setIsPaying(false);
-    refetchExpense();
-    refetchPaymentStatus();
-    onPaymentComplete?.();
-  }
+  useEffect(() => {
+    if (isSuccess && isPaying) {
+      console.log('✅ [ExpenseCard] Payment confirmed!');
+      setIsPaying(false);
+      refetchExpense();
+      refetchPaymentStatus();
+      onPaymentComplete?.();
+    }
+  }, [isSuccess, isPaying]);
 
   if (!expense) {
     return (
@@ -114,8 +142,9 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
   // Calculate payment timing for Arc rewards
   const getPaymentReward = () => {
     const timeDiff = (Date.now() - Number(createdAt) * 1000) / 1000;
-    if (timeDiff < 60) return { amount: 2, label: '⚡ Instant', color: '#10b981' };
+    if (timeDiff < 3600) return { amount: 2, label: '⚡ Instant', color: '#10b981' };
     if (timeDiff < 86400) return { amount: 1, label: '🔥 Fast', color: '#f59e0b' };
+    if (timeDiff < 604800) return { amount: 0.5, label: '💨 Normal', color: '#06b6d4' };
     return { amount: 0, label: '', color: '' };
   };
 
@@ -124,7 +153,7 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
   // Handle off-chain payment notification via Nitrolite
   const handleOffChainPayment = async () => {
     if (!nitroliteClient) {
-      console.warn('⚠️ [ExpenseCard] Nitrolite not available, use regular payment');
+      console.warn('⚠️ [ExpenseCard] Nitrolite not available');
       return false;
     }
 
@@ -132,7 +161,6 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
       console.log('⚡ [ExpenseCard] Sending off-chain payment notification...');
       setOffChainPaymentPending(true);
 
-      // Send payment notification off-chain
       const result = await sendPayment(nitroliteClient, expenseId.toString(), {
         from: currentUserAddress,
         expenseId: expenseId.toString(),
@@ -155,16 +183,40 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
     }
   };
 
-  // Handle full payment (off-chain notification + on-chain settlement)
+  // Handle full payment with extensive debugging
   const handlePayExpense = async () => {
-    if (!currentUserAddress || userHasPaid) return;
+    console.log('🔵 [ExpenseCard] ========== PAY BUTTON CLICKED ==========');
+    console.log('🔵 [ExpenseCard] Current user:', currentUserAddress);
+    console.log('🔵 [ExpenseCard] User has paid:', userHasPaid);
+    console.log('🔵 [ExpenseCard] Is payer:', isPayer);
+    console.log('🔵 [ExpenseCard] Is paying:', isPaying);
+
+    if (!currentUserAddress) {
+      console.error('❌ [ExpenseCard] No wallet address');
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    if (userHasPaid) {
+      console.warn('⚠️ [ExpenseCard] User already paid, early return');
+      return;
+    }
+
+    if (isPaying) {
+      console.warn('⚠️ [ExpenseCard] Payment already in progress');
+      return;
+    }
 
     setIsPaying(true);
+    console.log('💰 [ExpenseCard] Starting payment process...');
 
     try {
-      console.log('💰 [ExpenseCard] Processing payment...');
-      console.log('💰 [ExpenseCard] Expense ID:', expenseId.toString());
-      console.log('💰 [ExpenseCard] Amount:', shareEth, 'ETH');
+      console.log('💰 [ExpenseCard] Payment details:');
+      console.log('  - Expense ID:', expenseId.toString());
+      console.log('  - Expense ID type:', typeof expenseId);
+      console.log('  - Amount:', shareEth, 'ETH');
+      console.log('  - Amount (wei):', amountPerPerson.toString());
+      console.log('  - Amount type:', typeof amountPerPerson);
 
       // Step 1: Try off-chain notification first (if Nitrolite available)
       if (nitroliteClient) {
@@ -172,23 +224,66 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
         await handleOffChainPayment();
       }
 
-      // Step 2: Execute on-chain payment
-      console.log('💰 [ExpenseCard] Executing on-chain payment...');
+      // Step 2: Get contract details
+      console.log('💰 [ExpenseCard] Getting contract details...');
       const contract = getBillSplitContract();
+      console.log('💰 [ExpenseCard] Contract address:', contract.address);
+      console.log('💰 [ExpenseCard] ABI length:', contract.abi.length);
+      
+      // Check if settleExpense exists in ABI
+      const hasSettleExpense = contract.abi.some(item => 
+        item.type === 'function' && item.name === 'settleExpense'
+      );
+      console.log('💰 [ExpenseCard] Has settleExpense in ABI:', hasSettleExpense);
 
-      await writeContract({
+      if (!hasSettleExpense) {
+        console.error('❌ [ExpenseCard] settleExpense not found in ABI!');
+        console.log('Available functions:', contract.abi
+          .filter(item => item.type === 'function')
+          .map(f => f.name)
+        );
+        alert('Contract ABI error: settleExpense function not found');
+        setIsPaying(false);
+        return;
+      }
+
+      // Step 3: Prepare transaction parameters with type safety
+      console.log('💰 [ExpenseCard] Preparing transaction parameters...');
+      
+      const txParams = {
         address: contract.address,
         abi: contract.abi,
-        functionName: 'payExpense',
-        args: [expenseId],
-        value: amountPerPerson,
-      });
+        functionName: 'settleExpense',
+        args: [expenseId], // Keep as BigInt
+        value: amountPerPerson, // Keep as BigInt
+      };
 
-      console.log('✅ [ExpenseCard] Payment transaction submitted');
+      console.log('💰 [ExpenseCard] Transaction parameters:');
+      console.log('  - address:', txParams.address);
+      console.log('  - functionName:', txParams.functionName);
+      console.log('  - args:', txParams.args);
+      console.log('  - args[0] (expenseId):', txParams.args[0].toString(), typeof txParams.args[0]);
+      console.log('  - value:', txParams.value.toString(), typeof txParams.value);
+
+      // Step 4: Execute on-chain payment
+      console.log('💰 [ExpenseCard] Calling writeContract...');
+      
+      await writeContract(txParams);
+
+      console.log('✅ [ExpenseCard] writeContract called successfully');
+      console.log('💰 [ExpenseCard] Waiting for MetaMask approval...');
     } catch (err) {
       console.error('❌ [ExpenseCard] Payment failed:', err);
+      console.error('❌ [ExpenseCard] Error name:', err.name);
+      console.error('❌ [ExpenseCard] Error message:', err.message);
+      console.error('❌ [ExpenseCard] Error stack:', err.stack);
       setIsPaying(false);
-      alert('Payment failed: ' + (err.shortMessage || err.message || 'Unknown error'));
+      
+      if (err.message?.includes('User rejected')) {
+        alert('Transaction cancelled');
+      } else {
+        alert('Payment failed: ' + (err.shortMessage || err.message || 'Unknown error'));
+      }
     }
   };
 
@@ -271,7 +366,7 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
             
             {nitroliteClient && (
               <p style={styles.gaslessNote}>
-                ⚡ Yellow Network enabled - payment notification will be sent off-chain first
+                ⚡ Yellow Network enabled - payment notification sent off-chain first
               </p>
             )}
           </>
@@ -286,7 +381,7 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
         )}
 
         {/* Transaction Status */}
-        {hash && isPaying && (
+        {hash && (
           <div style={styles.txStatus}>
             <p style={{ margin: '0 0 8px 0' }}>✅ Payment transaction submitted!</p>
             <a 
@@ -299,6 +394,18 @@ function ExpenseCard({ expenseId, currentUserAddress, nitroliteClient, onPayment
             </a>
           </div>
         )}
+
+        {/* Debug Info (remove in production) */}
+        <details style={{ marginTop: '16px', fontSize: '12px', color: '#666' }}>
+          <summary style={{ cursor: 'pointer' }}>Debug Info</summary>
+          <div style={{ marginTop: '8px', fontFamily: 'monospace' }}>
+            <p>Expense ID: {expenseId.toString()}</p>
+            <p>Your Address: {currentUserAddress}</p>
+            <p>Has Paid: {String(hasPaid)}</p>
+            <p>Is Payer: {String(isPayer)}</p>
+            <p>Amount Per Person: {amountPerPerson.toString()} wei</p>
+          </div>
+        </details>
       </div>
 
       {/* Footer */}
@@ -317,10 +424,26 @@ const styles = {
     margin: '0 auto',
     padding: '20px',
   },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '16px',
+  },
   title: {
     fontSize: '32px',
-    marginBottom: '24px',
+    margin: 0,
     color: '#1a1a1a',
+  },
+  arcBadge: {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    color: 'white',
+    padding: '12px 20px',
+    borderRadius: '12px',
+    fontSize: '16px',
+    fontWeight: '600',
   },
   nitroliteStatus: {
     backgroundColor: '#fef3c7',
