@@ -1,6 +1,7 @@
 import { useAccount } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { getENSName, getENSAvatar, shortenAddress } from '../utils/ens';
+import './Profile.css';
 
 export default function Profile() {
   const { address, isConnected } = useAccount();
@@ -34,42 +35,39 @@ export default function Profile() {
   if (!isConnected) return null;
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
+    <div className="profile-container">
+      <div className="profile-card">
         {loading ? (
-          <p>Heyy hi loading your details </p>
+          <p className="profile-loading">Loading your identity…</p>
         ) : (
-          <>
-            <div style={styles.headerRow}>
-              {avatar ? (
-                <img src={avatar} alt="ENS Avatar" style={styles.smallAvatar} />
-              ) : (
-                <div style={styles.smallDefaultAvatar}>
-                  {(ensName || '?').charAt(0).toUpperCase()}
-                </div>
-              )}
+          <div className="profile-header">
+            {avatar ? (
+              <img src={avatar} alt="ENS Avatar" className="profile-avatar" />
+            ) : (
+              <div className="profile-avatar-fallback">
+                {(ensName || '?').charAt(0).toUpperCase()}
+              </div>
+            )}
 
-              <div style={styles.nameBlock}>
-                <div style={styles.name}>
-                  Hi, {ensName || shortenAddress(address)} 
-                </div>
-                <div style={styles.address}>
-                  {shortenAddress(address)}
-                </div>
+            <div className="profile-name-block">
+              <div className="profile-name">
+                Hi, {ensName || shortenAddress(address)}
+              </div>
+              <div className="profile-address">
+                {shortenAddress(address)}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {!loading && !ensName && (
-        <div style={styles.prompt}>
+        <div className="profile-ens-prompt">
           <p>Want an ENS name?</p>
           <a
             href="https://app.ens.domains"
             target="_blank"
             rel="noopener noreferrer"
-            style={styles.link}
           >
             Register on Sepolia →
           </a>
@@ -78,67 +76,3 @@ export default function Profile() {
     </div>
   );
 }
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'left',
-    gap: '20px',
-    marginTop: '40px',
-  },
-  card: {
-    backgroundColor: 'white',
-    padding: '12px',
-    textAlign: 'left',
-    minWidth: '300px',
-  },
-  headerRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '16px',
-  },
-  smallAvatar: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    objectFit: 'cover',
-    border: '1px solid #000307',
-  },
-  smallDefaultAvatar: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    backgroundColor: '#E0E7FF',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#050505',
-  },
-  nameBlock: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-  },
-  name: {
-    fontSize: '20px',
-    fontWeight: 'bold',
-  },
-  address: {
-    fontSize: '13px',
-    color: '#6B7280',
-  },
-  prompt: {
-    backgroundColor: '#FEF3C7',
-    textAlign: 'center',
-    padding: '12px',
-    borderRadius: '8px',
-  },
-  link: {
-    color: '#0E76FD',
-    fontWeight: '600',
-  },
-};

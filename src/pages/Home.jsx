@@ -1,18 +1,30 @@
 import { useNavigate } from "react-router-dom";
+import "./Home.css";
 
 function Home() {
   const navigate = useNavigate();
 
   return (
-    <>
-      <button onClick={() => navigate("/createexpense")}>
-        Create Expense
-      </button>
+    <div className="home-container">
+      <div className="home-intro">
+        <h1>Split Smarter.</h1>
+        <p>
+          Create shared expenses, split bills fairly, and track who owes what —
+          all in one place. Add an expense, assign participants, and let the app
+          handle the math.
+        </p>
+      </div>
 
-      <button>
-        View Expense History
-      </button>
-    </>
+      <div className="home-actions">
+        <button onClick={() => navigate("/createexpense")}>
+          Create Expense
+        </button>
+
+        <button onClick={() => navigate("/expenses")}>
+          View Expense History
+        </button>
+      </div>
+    </div>
   );
 }
 

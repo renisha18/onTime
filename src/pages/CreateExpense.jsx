@@ -3,7 +3,6 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadCont
 import { useNavigate } from 'react-router-dom';
 import { parseEther, formatEther } from 'viem';
 import { getBillSplitContract, getArcTokenContract } from '../utils/contracts';
-// Import Nitrolite helper
 import { initializeNitrolite, createSession, sendPayment, closeSession } from '../utils/nitroliteHelper';
 
 export default function CreateExpensePage() {
