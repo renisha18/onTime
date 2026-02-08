@@ -1,27 +1,22 @@
 .profile-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin: 0px;
-
+  width: 100%;
+  padding: 12px 20px;
+  border-bottom: 1px solid #1f1f1f;
 }
 
-/* Main card */
+/* Header strip */
 .profile-card {
-  background-color: #0b0b0b;
-  border: 1px solid #1f1f1f;
-  border-radius: 14px;
-  padding: 14px 16px;
-  min-width: 280px;
-  margin-top: 12px;
-  margin-bottom: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
 }
 
-/* Header row */
 .profile-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 /* Avatar */
@@ -53,13 +48,13 @@
 }
 
 .profile-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #f9fafb;
+  color: #000000;
 }
 
 .profile-address {
-  font-size: 13px;
+  font-size: 12px;
   color: #9ca3af;
 }
 
@@ -71,10 +66,12 @@
 
 /* ENS prompt */
 .profile-ens-prompt {
-  background-color: #111;
-  border: 1px dashed #2a2a2a;
+  margin: 0 auto;
+  max-width: 360px;
+  background-color: #0f0f0f;
+  border: 1px dashed #262626;
   border-radius: 12px;
-  padding: 12px;
+  padding: 10px;
   text-align: center;
 }
 
@@ -92,4 +89,14 @@
 
 .profile-ens-prompt a:hover {
   text-decoration: underline;
+}
+
+.profile-avatar,
+.profile-avatar-fallback {
+  transition: transform 0.2s ease;
+}
+
+.profile-avatar:hover,
+.profile-avatar-fallback:hover {
+  transform: scale(1.05);
 }

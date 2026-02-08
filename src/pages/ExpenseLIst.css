@@ -1,0 +1,264 @@
+/* ======================
+   ROOT (reuse app theme)
+====================== */
+
+:root {
+  --gray-0: #ffffff;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #e5e5e5;
+  --gray-300: #d4d4d4;
+  --gray-400: #a3a3a3;
+  --gray-500: #737373;
+  --gray-600: #525252;
+  --gray-700: #404040;
+  --gray-800: #262626;
+  --gray-900: #171717;
+  --gray-950: #0a0a0a;
+}
+
+/* ======================
+   PAGE
+====================== */
+
+.expense-container {
+  min-height: 100vh;
+  background: var(--gray-50);
+  color: var(--gray-900);
+  padding: 40px 24px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+/* ======================
+   HEADER
+====================== */
+
+.expense-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.expense-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--gray-950);
+}
+
+/* ======================
+   ARC BADGE
+====================== */
+
+.arc-badge {
+  background: var(--gray-0);
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+/* ======================
+   SESSION STATUS
+====================== */
+
+.session-status {
+  background: var(--gray-0);
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--gray-600);
+  margin-bottom: 24px;
+}
+
+/* ======================
+   EMPTY STATE
+====================== */
+
+.empty-state {
+  margin-top: 120px;
+  text-align: center;
+  background: var(--gray-0);
+  border: 1px solid var(--gray-200);
+  border-radius: 18px;
+  padding: 40px;
+}
+
+.empty-state h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  color: var(--gray-900);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gray-600);
+}
+
+/* ======================
+   LIST
+====================== */
+
+.expense-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ======================
+   CARD
+====================== */
+
+.expense-card {
+  background: var(--gray-0);
+  border: 1px solid var(--gray-200);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* ======================
+   CARD HEADER
+====================== */
+
+.expense-card-header {
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.expense-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--gray-900);
+}
+
+/* ======================
+   BADGES
+====================== */
+
+.badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.badge-settled {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+.badge-paid {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+.badge-pending {
+  background: var(--gray-200);
+  color: var(--gray-700);
+}
+
+/* ======================
+   CARD BODY
+====================== */
+
+.expense-card-body {
+  padding: 20px;
+  font-size: 14px;
+  color: var(--gray-700);
+}
+
+/* ======================
+   AMOUNTS
+====================== */
+
+.amount-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.amount-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.amount-row.highlight {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+/* ======================
+   PAY BUTTON (PRIMARY)
+====================== */
+
+.pay-btn {
+  width: 100%;
+  background: var(--gray-950);
+  color: var(--gray-0);
+  border: none;
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pay-btn:hover {
+  background: var(--gray-900);
+}
+
+.pay-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ======================
+   PAID MESSAGE
+====================== */
+
+.paid-message {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--gray-600);
+  text-align: center;
+}
+
+/* ======================
+   TX STATUS
+====================== */
+
+.tx-status {
+  margin-top: 12px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.tx-status a {
+  color: var(--gray-900);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* ======================
+   FOOTER
+====================== */
+
+.expense-card-footer {
+  padding: 12px 20px;
+  font-size: 11px;
+  color: var(--gray-500);
+  border-top: 1px solid var(--gray-200);
+}

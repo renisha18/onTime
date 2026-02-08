@@ -1,11 +1,9 @@
 .home-container {
-  min-height: calc(100vh - 64px); /* adjust if header height differs */
+  min-height: calc(100vh - 72px); /* header height */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: #0b0b0b;
-  color: #eaeaea;
   padding: 2rem;
   text-align: center;
 }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { parseEther, formatEther } from 'viem';
 import { getBillSplitContract, getArcTokenContract } from '../utils/contracts';
 import { initializeNitrolite, createSession, sendPayment, closeSession } from '../utils/nitroliteHelper';
+import './CreateExpense.css';
 
 export default function CreateExpensePage() {
   const { address, isConnected } = useAccount();
@@ -303,322 +304,124 @@ export default function CreateExpensePage() {
   const arcTokens = arcBalance ? (Number(arcBalance) / 1e18).toFixed(2) : '0.00';
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Create New Expense</h1>
+    <div className="create-container">
+  <h1 className="create-title">Create New Expense</h1>
 
-      {/* Yellow Session Status */}
-      {sessionActive && (
-        <div style={styles.yellowBanner}>
-          <span style={styles.yellowIcon}>⚡</span>
-          <div>
-            <p style={styles.yellowLabel}>Yellow Session Active</p>
-            <p style={styles.yellowStatus}>Gasless payments enabled • Session ID: {sessionId?.slice(0, 8)}...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Arc Balance Badge */}
-      <div style={styles.arcBanner}>
-        <span style={styles.arcIcon}>🪙</span>
-        <div>
-          <p style={styles.arcLabel}>Your Arc Rewards</p>
-          <p style={styles.arcAmount}>{arcTokens} ARC</p>
-        </div>
-        <div style={styles.arcInfo}>
-          <p style={{ fontSize: '11px', margin: 0 }}>⚡ Pay instantly: +2 ARC</p>
-          <p style={{ fontSize: '11px', margin: 0 }}>🔥 Pay within 24h: +1 ARC</p>
-        </div>
-      </div>
-      
-      <div style={styles.form}>
-        {/* Description */}
-        <div style={styles.field}>
-          <label style={styles.label}>What's this for?</label>
-          <input
-            type="text"
-            placeholder="e.g., Dinner at Olive Garden"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            style={styles.input}
-            required
-          />
-        </div>
-
-        {/* Total Amount */}
-        <div style={styles.field}>
-          <label style={styles.label}>Total Amount (ETH)</label>
-          <input
-            type="number"
-            step="0.0001"
-            placeholder="0.001"
-            value={totalAmount}
-            onChange={(e) => setTotalAmount(e.target.value)}
-            style={styles.input}
-            required
-          />
-          <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>
-            Minimum: 0.001 ETH (~$2.50)
-          </p>
-        </div>
-
-        {/* Participants */}
-        <div style={styles.field}>
-          <label style={styles.label}>Split with (ENS names or addresses)</label>
-          
-          <div style={styles.participantRow}>
-            <input
-              type="text"
-              value={`You (${address?.slice(0, 6)}...${address?.slice(-4)})`}
-              disabled
-              style={{ ...styles.input, backgroundColor: '#f0f0f0' }}
-            />
-          </div>
-
-          {participants.map((p, i) => (
-            <div key={i} style={styles.participantRow}>
-              <input
-                type="text"
-                placeholder="alice.eth or 0x742d..."
-                value={p}
-                onChange={(e) => updateParticipant(i, e.target.value)}
-                style={styles.input}
-              />
-              <button
-                type="button"
-                onClick={() => removeParticipant(i)}
-                style={styles.removeBtn}
-              >
-                ✕
-              </button>
-              {/* Show payment status if tracked */}
-              {paymentTracking[p] && (
-                <span style={styles.paidBadge}>
-                  ✅ +{paymentTracking[p].arcReward} ARC
-                </span>
-              )}
-            </div>
-          ))}
-
-          <button
-            type="button"
-            onClick={addParticipant}
-            style={styles.addBtn}
-          >
-            + Add Person
-          </button>
-        </div>
-
-        {/* Summary */}
-        <div style={styles.summary}>
-          <h3 style={{ margin: '0 0 12px 0' }}>Split Summary</h3>
-          <p>Total: <strong>{totalAmount || '0.0000'} ETH</strong></p>
-          <p>Split between: <strong>{numPeople} people</strong></p>
-          <p>Each person owes: <strong>{perPerson} ETH</strong></p>
-          {sessionActive && (
-            <p style={{ color: '#059669', fontWeight: '600', marginTop: '8px' }}>
-              ⚡ Gas-free payments via Yellow Network
-            </p>
-          )}
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="button"
-          style={{
-            ...styles.submitBtn,
-            opacity: (isPending || isConfirming) ? 0.6 : 1,
-            cursor: (isPending || isConfirming) ? 'not-allowed' : 'pointer',
-          }}
-          onClick={handleSubmit}
-          disabled={isPending || isConfirming}
-        >
-          {isPending && '⏳ Waiting for wallet approval...'}
-          {isConfirming && '⏳ Confirming transaction...'}
-          {!isPending && !isConfirming && '🚀 Create Expense (Gas-Free)'}
-        </button>
-
-        {/* Transaction Status */}
-        {hash && (
-          <div style={styles.status}>
-            <p style={{ margin: '0 0 8px 0' }}>✅ Transaction submitted!</p>
-            <a 
-              href={`https://sepolia.etherscan.io/tx/${hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={styles.link}
-            >
-              View on Sepolia Etherscan →
-            </a>
-          </div>
-        )}
-
-        {isSuccess && sessionActive && (
-          <div style={styles.success}>
-            <p style={{ margin: '0 0 8px 0', fontSize: '20px' }}>🎉 Expense created!</p>
-            <p style={{ margin: 0 }}>Yellow session active. Payments will be tracked off-chain.</p>
-            <p style={{ margin: '8px 0 0 0', fontSize: '12px' }}>Session will auto-settle when complete...</p>
-          </div>
-        )}
+  {/* Yellow Session Status */}
+  {sessionActive && (
+    <div className="dark-card session-card">
+      <span className="icon-yellow">⚡</span>
+      <div>
+        <p className="session-label">Yellow Session Active</p>
+        <p className="session-status">
+          Gasless payments enabled • Session ID: {sessionId?.slice(0, 8)}...
+        </p>
       </div>
     </div>
+  )}
+
+  {/* Arc Balance */}
+  <div className="arc-banner">
+    <span className="arc-icon">🪙</span>
+    <div>
+      <p className="arc-label">Your Arc Rewards</p>
+      <p className="arc-amount">{arcTokens} ARC</p>
+    </div>
+    <div className="arc-info">
+      <p>⚡ Pay instantly: +2 ARC</p>
+      <p>🔥 Pay within 24h: +1 ARC</p>
+    </div>
+  </div>
+
+  <div className="dark-card form-card">
+    {/* Description */}
+    <div className="form-field">
+      <label>What’s this for?</label>
+      <input
+        className="dark-input"
+        placeholder="e.g., Dinner at Olive Garden"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        required
+      />
+    </div>
+
+    {/* Amount */}
+    <div className="form-field">
+      <label>Total Amount (ETH)</label>
+      <input
+        className="dark-input"
+        type="number"
+        step="0.0001"
+        placeholder="0.001"
+        value={totalAmount}
+        onChange={(e) => setTotalAmount(e.target.value)}
+        required
+      />
+      <p className="hint-text">Minimum: 0.001 ETH (~$2.50)</p>
+    </div>
+
+    {/* Participants */}
+    <div className="form-field">
+      <label>Split with</label>
+
+      <div className="participant-row">
+        <input
+          className="dark-input"
+          disabled
+          value={`You (${address?.slice(0, 6)}...${address?.slice(-4)})`}
+        />
+      </div>
+
+      {participants.map((p, i) => (
+        <div key={i} className="participant-row">
+          <input
+            className="dark-input"
+            placeholder="alice.eth or 0x742d..."
+            value={p}
+            onChange={(e) => updateParticipant(i, e.target.value)}
+          />
+          <button className="remove-btn" onClick={() => removeParticipant(i)}>✕</button>
+          {paymentTracking[p] && (
+            <span className="paid-badge">
+              ✅ +{paymentTracking[p].arcReward} ARC
+            </span>
+          )}
+        </div>
+      ))}
+
+      <button className="add-btn" onClick={addParticipant}>+ Add Person</button>
+    </div>
+
+    {/* Summary */}
+    <div className="summary-box">
+      <h3>Split Summary</h3>
+      <p>Total: <strong>{totalAmount || '0.0000'} ETH</strong></p>
+      <p>People: <strong>{numPeople}</strong></p>
+      <p>Each owes: <strong>{perPerson} ETH</strong></p>
+      {sessionActive && <p className="success-text">⚡ Gas-free via Yellow</p>}
+    </div>
+
+    {/* Submit */}
+    <button
+      className={`primary-btn ${(isPending || isConfirming) && 'disabled'}`}
+      onClick={handleSubmit}
+      disabled={isPending || isConfirming}
+    >
+      {isPending && '⏳ Wallet approval...'}
+      {isConfirming && '⏳ Confirming...'}
+      {!isPending && !isConfirming && '🚀 Create Expense (Gas-Free)'}
+    </button>
+
+    {/* Success */}
+    {isSuccess && (
+      <div className="success-box">
+        <p className="success-title">🎉 Expense created!</p>
+        <p>Yellow session active. Payments tracked off-chain.</p>
+      </div>
+    )}
+  </div>
+</div>
   );
 }
 
-const styles = {
-  container: {
-    maxWidth: '600px',
-    margin: '0 auto',
-    padding: '20px',
-  },
-  title: {
-    fontSize: '32px',
-    marginBottom: '16px',
-  },
-  yellowBanner: {
-    backgroundColor: '#FEF3C7',
-    border: '2px solid #F59E0B',
-    padding: '16px',
-    borderRadius: '12px',
-    marginBottom: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  yellowIcon: {
-    fontSize: '32px',
-  },
-  yellowLabel: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#92400E',
-    margin: '0 0 4px 0',
-  },
-  yellowStatus: {
-    fontSize: '12px',
-    color: '#92400E',
-    margin: 0,
-  },
-  arcBanner: {
-    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    padding: '20px',
-    borderRadius: '16px',
-    marginBottom: '24px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    color: 'white',
-  },
-  arcIcon: {
-    fontSize: '40px',
-  },
-  arcLabel: {
-    fontSize: '12px',
-    opacity: 0.9,
-    margin: '0 0 4px 0',
-  },
-  arcAmount: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    margin: 0,
-  },
-  arcInfo: {
-    marginLeft: 'auto',
-    textAlign: 'right',
-    opacity: 0.9,
-  },
-  form: {
-    backgroundColor: 'white',
-    padding: '32px',
-    borderRadius: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#333',
-  },
-  input: {
-    padding: '12px 16px',
-    borderRadius: '8px',
-    border: '1px solid #ddd',
-    fontSize: '16px',
-  },
-  participantRow: {
-    display: 'flex',
-    gap: '8px',
-    alignItems: 'center',
-  },
-  removeBtn: {
-    backgroundColor: '#EF4444',
-    color: 'white',
-    border: 'none',
-    padding: '12px 16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    flexShrink: 0,
-  },
-  paidBadge: {
-    backgroundColor: '#10B981',
-    color: 'white',
-    padding: '6px 12px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: '600',
-    whiteSpace: 'nowrap',
-  },
-  addBtn: {
-    backgroundColor: '#E0E7FF',
-    color: '#0E76FD',
-    border: 'none',
-    padding: '12px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-  summary: {
-    backgroundColor: '#F0F9FF',
-    padding: '20px',
-    borderRadius: '12px',
-    border: '2px dashed #0E76FD',
-  },
-  submitBtn: {
-    backgroundColor: '#0E76FD',
-    color: 'white',
-    border: 'none',
-    padding: '18px',
-    borderRadius: '12px',
-    fontSize: '18px',
-    fontWeight: '700',
-    cursor: 'pointer',
-  },
-  status: {
-    backgroundColor: '#E0F2FE',
-    padding: '16px',
-    borderRadius: '12px',
-    textAlign: 'center',
-    border: '2px solid #0284C7',
-  },
-  success: {
-    backgroundColor: '#D1FAE5',
-    padding: '20px',
-    borderRadius: '12px',
-    textAlign: 'center',
-    color: '#065F46',
-    border: '2px solid #10B981',
-  },
-  link: {
-    color: '#0E76FD',
-    textDecoration: 'none',
-    fontWeight: '600',
-  },
-};
