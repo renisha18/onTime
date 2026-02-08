@@ -339,7 +339,7 @@ export default function CreateExpensePage() {
       <label>What’s this for?</label>
       <input
         className="dark-input"
-        placeholder="e.g., Dinner at Olive Garden"
+        placeholder="Enter expense details"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         required
@@ -353,7 +353,7 @@ export default function CreateExpensePage() {
         className="dark-input"
         type="number"
         step="0.0001"
-        placeholder="0.001"
+        placeholder="Enter the amount"
         value={totalAmount}
         onChange={(e) => setTotalAmount(e.target.value)}
         required
@@ -377,7 +377,7 @@ export default function CreateExpensePage() {
         <div key={i} className="participant-row">
           <input
             className="dark-input"
-            placeholder="alice.eth or 0x742d..."
+            placeholder="Enter your friends name"
             value={p}
             onChange={(e) => updateParticipant(i, e.target.value)}
           />

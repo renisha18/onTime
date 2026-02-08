@@ -7,11 +7,10 @@ function Home() {
   return (
     <div className="home-container">
       <div className="home-intro">
-        <h1> Lets make spillting money easier! </h1>
+        <h1> Spilting money made rewarding! </h1>
         <p>
           Create shared expenses, split bills fairly, and track who owes what —
-          all in one place. Add an expense, assign participants, and let the app
-          handle the math.
+          all in one place. Add an expense, assign participants, and onTime makes sure your friends do the payment. 
         </p>
       </div>
 

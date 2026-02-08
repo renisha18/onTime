@@ -47,10 +47,10 @@ const styles = {
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: '16px',
+
   },
   title: {
-    fontSize: '48px',
+    fontSize: '108px',
     fontWeight: '800',
   },
   tagline: {
