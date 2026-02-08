@@ -1,0 +1,9 @@
+We've all been that friend who pays the full restaurant bill upfront, then awkwardly texts everyone asking for their share days later. Payments trickle in slowly, and you're stuck either pestering people or eating the cost. OnTime solves this with a simple premise: reward people for paying quickly.
+
+The Architecture We built a three-layer system combining Arc Network, Yellow Network, and smart incentives:
+
+Layer 1 - Arc Network (Blockchain): We deployed two Solidity contracts on Arc. ArcRewardToken (ERC-20) mints rewards when users pay, while BillSplit manages expenses and calculates time-based rewards: 2 ARC for instant payments (<1 hour), 1 ARC for fast payments (<24 hours), 0.5 ARC for normal payments (<7 days). Arc's EVM compatibility let us use standard OpenZeppelin contracts and deploy via Remix with zero modifications.
+
+Layer 2 - Yellow Network (State Channels): Here's where it gets interesting. We integrated Nitrolite SDK to solve the gas fee problem. When users create expenses, a Nitrolite session opens connecting to ClearNode via WebSocket. Payment notifications happen off-chain through state channels (gasless!), while final settlement happens on-chain. Instead of 10+ on-chain transactions per expense, we do 2 (create + settle) with everything between happening off-chain.
+
+Layer 3 - React Frontend: Built with Vite and wagmi v2 hooks (useWriteContract, useReadContract, useWaitForTransactionReceipt). The challenge was integrating Nitrolite, which requires viem clients not wagmi hooks. We dynamically create viem publicClient and walletClient instances, then initialize NitroliteClient with them. This hybrid approach uses wagmi for UI state and Nitrolite for state channels.
